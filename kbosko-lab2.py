@@ -10,7 +10,8 @@ from botocore.exceptions import ClientError
 AWS_REGION = 'us-east-1'
 CIDR_VPC = '10.0.0.0/16'
 CIDR_PUBLIC_SUBNET = '10.0.0.0/24'
-IP_FOR_SSHACESS = '23.118.50.228/32'
+# PASTE YOUR IP ADDRESS HERE
+IP_FOR_SSHACESS = 'add-your-IP-address-here'
 
 VPC_TAG_VALUE = 'cs6620-lab2-vpc'
 INTERNET_GATEWAY_TAG_VALUE = 'cs6620-lab2-internet-gateway'
@@ -24,7 +25,8 @@ VOLUME_TAG_VALUE = 'cs6620-lab2-volume-10GB'
 IMAGE_ID = 'ami-033b95fb8079dc481'
 INSTANCE_TYPE = 't2.micro'
 
-KEY_NAME = 'my-key-pair'
+# PASTE YOUR KEY PAIR HERE
+KEY_NAME = 'add-your-key-pair-here'
 DEVICE = '/dev/xvda'
 
 VOLUME_SIZE = 10
@@ -311,9 +313,7 @@ def associate_route_table_with_subnet(client, vpc_id, internet_gateway_id, subne
 
 def create_security_group(client, vpc_id):
     '''
-    Creates security group on a given VPC,
-    Authorizes SSH access for a specified IP address
-    Authorizes HTTP access
+    Creates security group on a given VPC
     '''
     try:
         response = client.create_security_group(
@@ -341,7 +341,8 @@ def create_security_group(client, vpc_id):
 
 def authorize_for_SSH_and_HTTP_access(client, security_group_id):
     '''
-
+    Authorizes SSH access for a specified IP address
+    Authorizes HTTP access
     '''
     try:
         client.authorize_security_group_ingress(
