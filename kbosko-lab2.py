@@ -443,35 +443,37 @@ def create_custom_instance(resource, security_group_id, subnet_id):
 
 
 def main():
-    # create EC2 client and VPC
+    # create EC2 client and resource
     resource = boto3.resource('ec2', region_name=AWS_REGION)
     client = boto3.client('ec2', region_name=AWS_REGION)
 
+    # create custom VPC, if it doesn't exist already
     vpc_id = get_custom_vpc_id(client)
     if not vpc_id:
         vpc_id = create_custom_vpc(resource)
 
-    # create public subnet within VPC
+    # create public subnet within VPC, if it doesn't exist already
     subnet_id = get_custom_subnet_id(client)
     if not subnet_id:
         subnet_id = create_custom_subnet(client, vpc_id)
 
-    # create internet gateway and attach to custom VPC
+    # create internet gateway (if it doesn't exist) and attach to a custom VPC
     internet_gateway_id = get_custom_internet_gateway(client)
     if not internet_gateway_id:
         internet_gateway_id = create_and_attach_internet_gateway(client, vpc_id)
 
-    # create route table, route and associate it with subnet
+    # create quad-zero route and associate it with subnet
     route_table_id = get_custom_route_table(client)
     if not route_table_id:
         associate_route_table_with_subnet(client, vpc_id, internet_gateway_id, subnet_id)
 
+    #create security group (if it doesn't exist) and authorize SSH and HTTP access
     security_group_id = get_custom_security_group(client)
     if not security_group_id:
         security_group_id = create_security_group(client, vpc_id)
         authorize_for_SSH_and_HTTP_access(client, security_group_id)
 
-    # create EC2 instance
+    # create EC2 instance with given specifications
     ec2_instance = create_custom_instance(resource, security_group_id, subnet_id)
 
 
