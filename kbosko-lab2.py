@@ -1,6 +1,11 @@
+'''
+Author: Katerina Bosko
+CS6620 Lab2: use the python AWS SDK to programmatically provision a virtual machine (VM) in a VPC,
+             securely connect to it, and install a web server
+'''
+
 import boto3
 from botocore.exceptions import ClientError
-import sys
 
 AWS_REGION = 'us-east-1'
 CIDR_VPC = '10.0.0.0/16'
@@ -253,7 +258,7 @@ def create_and_attach_internet_gateway(client, vpc_id):
     try:
         client.attach_internet_gateway(
             InternetGatewayId=internet_gateway_id,
-            VpcId=vpc_id
+            VpcId=vpc_id,
         )
         print(f'Successfully attached internet gateway to VPC')
     except ClientError:
@@ -264,8 +269,8 @@ def create_and_attach_internet_gateway(client, vpc_id):
 
 def associate_route_table_with_subnet(client, vpc_id, internet_gateway_id, subnet_id):
     '''
-    Creates a route table for the specified VPC,
-    Creates a route in the route table that points all traffic (0.0.0.0/0) to the internet gateway,
+    Retrieves a main route table for the specified VPC,
+    Creates a route in the main route table that points all traffic (0.0.0.0/0) to the internet gateway,
     Associates it with the specified subnet
     '''
     try:
@@ -300,7 +305,7 @@ def associate_route_table_with_subnet(client, vpc_id, internet_gateway_id, subne
             RouteTableId=route_table_id,
             SubnetId=subnet_id,
         )
-        print(f'Subnet with id={subnet_id} is associated with custome route table id={route_table_id}')
+        print(f'Subnet with id={subnet_id} is associated with custom route table id={route_table_id}')
     except ClientError:
         print('Failed to associate route table with given subnet')
 
@@ -383,16 +388,16 @@ def create_custom_instance(resource, security_group_id, subnet_id):
                         {
                             'DeviceName': DEVICE,
                             'Ebs': {
-                                'DeleteOnTermination': False, #TODO check if need delete on termination
+                                'DeleteOnTermination': False,
                                 'VolumeSize': 10,
                                 'VolumeType': 'gp2',
-                                'Encrypted': False #TODO check if need encryption
+                                'Encrypted': False
                             },
                         },
                     ],
             ImageId = IMAGE_ID,
             MinCount = 1,
-            MaxCount = 2,
+            MaxCount = 1,
             InstanceType = INSTANCE_TYPE,
             KeyName = KEY_NAME,
             UserData=script,
@@ -400,7 +405,6 @@ def create_custom_instance(resource, security_group_id, subnet_id):
                         {
                             'AssociatePublicIpAddress': True,
                             'DeleteOnTermination': True,
-                            # 'Description': 'string',
                             'DeviceIndex': 0,
                             'Groups': [
                                 security_group_id,
@@ -437,7 +441,7 @@ def create_custom_instance(resource, security_group_id, subnet_id):
         return instance
 
 
-def main(dry_run):
+def main():
     # create EC2 client and VPC
     resource = boto3.resource('ec2', region_name=AWS_REGION)
     client = boto3.client('ec2', region_name=AWS_REGION)
@@ -472,8 +476,7 @@ def main(dry_run):
 
 
 if __name__ == '__main__':
-    dry_run = len(sys.argv) > 1 and sys.argv[1] == '--dry_run'
-    main(dry_run)
+    main()
 
 
 
