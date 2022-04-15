@@ -1,11 +1,15 @@
 '''
 Author: Katerina Bosko
 CS6620 Lab2: use the python AWS SDK to programmatically provision a virtual machine (VM) in a VPC,
-             securely connect to it, and install a web server
+             securely connect to it, and install a web server 
+
+Note: this lab requires the website (kbosko-website.zip) to be first uploaded to S3 bucket. 
+The zip file was uploaded from my local machine and is not provided here.
 '''
 
 import boto3
 from botocore.exceptions import ClientError
+import json
 
 AWS_REGION = 'us-east-1'
 CIDR_VPC = '10.0.0.0/16'
@@ -31,6 +35,53 @@ DEVICE = '/dev/xvda'
 
 VOLUME_SIZE = 10
 
+BUCKET_NAME = 'lab2-kbosko-website'
+ZIPFILE_TO_UPLOAD = 'kbosko-website.zip'
+
+def upload_mywebsite_zip_to_s3():
+    # create s3 resource
+    s3 = boto3.resource('s3')
+    # create a client
+    client = boto3.client('s3')
+
+    #list buckets
+    buckets = s3.buckets.all()
+
+    #delete if bucket with this name exists
+    bucket_to_delete = s3.Bucket(BUCKET_NAME)
+    if bucket_to_delete in buckets:
+        print(f"deleting existing bucket `{BUCKET_NAME}`")
+        bucket_to_delete.Acl().put(ACL='public-read-write')
+        bucket_to_delete.objects.all().delete()
+        bucket_to_delete.delete()
+    #create bucket with public-read permission
+    s3.create_bucket(ACL='public-read', Bucket=BUCKET_NAME)
+    policy = { "Version": "2012-10-17", "Statement": [
+                {
+                    "Sid": "PublicReadGetObject",
+                    "Effect": "Allow",
+                    "Principal": "*",
+                    "Action": "s3:GetObject",
+                    "Resource": f"arn:aws:s3:::{BUCKET_NAME}/*"
+                }
+            ]
+        }
+
+    #add bucket policy
+    client.put_bucket_policy(
+        Bucket=BUCKET_NAME,
+        Policy=json.dumps(policy),
+    )
+    print(f"starting upload to s3 bucket={BUCKET_NAME}")
+    with open(ZIPFILE_TO_UPLOAD, 'rb') as fp:
+        zipfile=fp.read()
+    params = {
+                    'Bucket': BUCKET_NAME,
+                    'Body': zipfile,
+                    'Key': ZIPFILE_TO_UPLOAD,
+                }
+    client.put_object(**params)
+    
 
 def get_custom_vpc_id(client):
     '''
@@ -443,6 +494,8 @@ def create_custom_instance(resource, security_group_id, subnet_id):
 
 
 def main():
+    upload_mywebsite_zip_to_s3()
+    
     # create EC2 client and resource
     resource = boto3.resource('ec2', region_name=AWS_REGION)
     client = boto3.client('ec2', region_name=AWS_REGION)
